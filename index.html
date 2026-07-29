@@ -734,5 +734,19 @@
 })();
 </script>
 
+
+<!-- NOTE: Skeleton for presentation mode enhancements -->
+<style>
+.presentation header,.presentation .sidebar,.presentation .panel-right,.presentation .controls-bar{display:none!important}
+.presentation #playerWrapper{position:fixed;inset:0;z-index:9999}
+#floatingConfig{position:fixed;top:10px;right:10px;z-index:10000;opacity:.2}
+</style>
+<button id="floatingConfig" onclick="document.body.classList.toggle('presentation')">⚙</button>
+<script>
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape')document.body.classList.remove('presentation');
+});
+</script>
+
 </body>
 </html>
