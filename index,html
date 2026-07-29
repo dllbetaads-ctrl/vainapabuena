@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Digital Signage</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;color:#fff}
+#app{width:100%;height:100%;position:relative}
+#player{width:100%;height:100%;pointer-events:none}
+#player iframe{width:100%;height:100%}
+.glass{background:rgba(0,0,0,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
+#controls{position:fixed;right:0;top:0;height:100%;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s;padding:12px 8px}
+#controls.hidden{opacity:0;pointer-events:none}
+#panel{background:rgba(0,0,0,.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);border-radius:16px 0 0 16px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:4px}
+#panel button{background:none;border:none;color:rgba(255,255,255,.7);padding:8px;border-radius:8px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;min-width:36px;min-height:36px}
+#panel button:hover{background:rgba(255,255,255,.1);color:#fff}
+#panel button:disabled{opacity:.3;pointer-events:none}
+.info{text-align:center;font-size:10px;color:rgba(255,255,255,.5);margin-bottom:4px}
+.info .num{font-size:12px;color:#fff;font-weight:600}
+.bar{width:48px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin:4px 0}
+.bar-fill{height:100%;background:rgba(255,255,255,.6);border-radius:2px;transition:width .3s}
+.sep{width:24px;height:1px;background:rgba(255,255,255,.08);margin:6px 0}
+#settings-btn,#playlist-btn,#remote-btn{position:fixed;top:16px;z-index:30;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);cursor:pointer;transition:.2s;font-size:16px}
+#settings-btn:hover,#playlist-btn:hover,#remote-btn:hover{color:#fff;transform:scale(1.1)}
+#settings-btn{left:16px}
+#playlist-btn{right:60px}
+#remote-btn{right:108px}
+#status{position:fixed;bottom:16px;left:16px;z-index:30;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,.5);font-family:monospace}
+.modal-overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center}
+.modal{background:rgba(0,0,0,.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;padding:20px}
+.modal h2{font-size:18px;font-weight:600;margin-bottom:16px}
+.modal label{display:block;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;margin-top:12px}
+.modal input,.modal textarea,.modal select{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;color:#fff;font-size:13px;outline:none;transition:.2s}
+.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:rgba(255,255,255,.3)}
+.modal textarea{resize:vertical;min-height:80px;font-family:monospace;font-size:12px}
+.modal .btn{background:rgba(255,255,255,.1);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;transition:.2s}
+.modal .btn:hover{background:rgba(255,255,255,.2)}
+.modal .btn:disabled{opacity:.3;pointer-events:none}
+.modal .btn-primary{background:rgba(255,255,255,.15)}
+.modal .btn-danger{background:rgba(255,255,20,.1);color:#f44}
+.modal .flex{display:flex;gap:8px;align-items:center}
+.modal .between{display:flex;justify-content:space-between;align-items:center}
+.modal .mt{margin-top:12px}
+.modal input[type=range]{width:100%;height:4px;background:rgba(255,255,255,.2);border-radius:2px;outline:none;-webkit-appearance:none}
+.modal input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;cursor:pointer}
+.modal input[type=checkbox]{width:16px;height:16px;accent-color:rgba(255,255,255,.5)}
+.vlist{max-height:200px;overflow-y:auto;margin:8px 0}
+.vitem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.5);transition:.15s}
+.vitem:hover{background:rgba(255,255,255,.05)}
+.vitem.active{background:rgba(255,255,255,.1);color:#fff}
+.vitem .idx{font-size:10px;color:rgba(255,255,255,.3);width:20px;text-align:right}
+.vitem .del{opacity:0;transition:.15s;background:none;border:none;color:#f44;cursor:pointer;font-size:14px;padding:2px}
+.vitem:hover .del{opacity:1}
+.logo-preview{max-height:60px;max-width:100%;margin-top:8px;border-radius:4px;object-fit:contain}
+#logo-overlay{position:absolute;z-index:20;pointer-events:none;object-fit:contain}
+#overlay-text{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;color:#fff;font-size:18px;font-weight:600;text-align:center;padding:12px 24px;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border-radius:12px;max-width:90%}
+#qr-popup{position:fixed;top:60px;right:16px;z-index:40;background:rgba(0,0,0,.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;text-align:center;width:200px}
+#qr-popup img{border-radius:8px;background:#fff;padding:8px;width:140px;height:140px}
+#qr-popup .url{font-size:9px;color:rgba(255,255,255,.3);word-break:break-all;margin-top:6px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="player"></div>
+  <img id="logo-overlay" style="display:none">
+  <div id="overlay-text" style="display:none"></div>
+  
+  <div id="controls">
+    <div id="panel">
+      <div class="info"><div class="num" id="videoNum">0 / 0</div></div>
+      <div class="bar"><div class="bar-fill" id="progressBar"></div></div>
+      <div class="info" id="timeDisplay">0:00 / 0:00</div>
+      <div class="sep"></div>
+      <button id="btnPlay" title="Play/Pause">▶</button>
+      <button id="btnPrev" title="Anterior">⏮</button>
+      <button id="btnNext" title="Siguiente">⏭</button>
+      <button id="btnRestart" title="Reiniciar">↺</button>
+      <button id="btnMute" title="Silenciar">🔊</button>
+      <div class="sep"></div>
+      <button id="btnFullscreen" title="Pantalla completa">⛶</button>
+      <div class="sep"></div>
+      <button id="btnMinimize" title="Minimizar" style="font-size:12px;color:rgba(255,255,255,.3)">◀</button>
+    </div>
+  </div>
+
+  <button id="settings-btn" title="Configuración">⚙</button>
+  <button id="playlist-btn" title="Playlist">☰</button>
+  <button id="remote-btn" title="Control remoto">📱</button>
+  <div id="status"></div>
+  <div id="qr-popup" style="display:none"></div>
+</div>
+
+<script>
+const STORAGE_KEY='vainapabuena-config';
+const DEFAULTS={videoUrls:[],logo:null,logoSize:80,logoPosition:'bottom-right',logoOpacity:80,logoMargin:20,overlay:null,overlayText:'',overlayEnabled:false,autoplay:true,loop:true,hideDelay:3000};
+
+function loadConfig(){try{const r=localStorage.getItem(STORAGE_KEY);return r?{...DEFAULTS,...JSON.parse(r)}:{...DEFAULTS}}catch{return{...DEFAULTS}}}
+function saveConfig(c){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(c))}catch{}}
+
+function extractId(url){try{const u=new URL(url.trim());if(!u.hostname.includes('youtube.com')&&!u.hostname.includes('youtu.be'))return null;if(u.searchParams.has('v'))return u.searchParams.get('v');const p=u.pathname.replace(/^\//,'').split('/');if(u.hostname.includes('youtu.be')&&p[0])return p[0];if(p[0]==='embed'&&p[1])return p[1];if(p[0]==='shorts'&&p[1])return p[1];return null}catch{return null}}
+
+function fmt(s){if(!s||!isFinite(s))return'0:00';const m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+sec.toString().padStart(2,'0')}
+
+let config=loadConfig();
+let player=null,playing=false,muted=false,currentVideo=0,videoIds=[],duration=0,progress=0;
+let playerReady=false,hideTimer=null,controlsVisible=true;
+
+const $=(id)=>document.getElementById(id);
+
+// Load YouTube IFrame API
+let apiReady=false;
+window.onYouTubeIframeAPIReady=()=>{apiReady=true;initPlayer()};
+if(!document.querySelector('#yt-api')){const t=document.createElement('script');t.id='yt-api';t.src='https://www.youtube.com/iframe_api';document.head.appendChild(t)}
+
+function initPlayer(){
+  if(!apiReady||videoIds.length===0)return;
+  player=new YT.Player('player',{
+    height:'100%',width:'100%',
+    playerVars:{controls:0,modestbranding:1,rel:0,iv_load_policy:3,disablekb:1,fs:0,cc_load_policy:0,autoplay:0,playsinline:1},
+    events:{
+      onReady:()=>{
+        playerReady=true;
+        muted=player.isMuted();
+        if(videoIds.length)player.cueVideoById(videoIds[0]);
+      },
+      onStateChange:(e)=>{
+        if(e.data===YT.PlayerState.PLAYING){playing=true;updateUI()}
+        else if(e.data===YT.PlayerState.PAUSED){playing=false;updateUI()}
+        else if(e.data===YT.PlayerState.ENDED){
+          playing=false;
+          const n=currentVideo+1;
+          if(n<videoIds.length){player.loadVideoById(videoIds[n]);currentVideo=n}
+          else if(config.loop&&videoIds.length){player.loadVideoById(videoIds[0]);currentVideo=0}
+          updateUI();
+        }else if(e.data===YT.PlayerState.CUED){if(player.getDuration)duration=player.getDuration();updateUI()}
+      },
+      onError:()=>alert('Error al reproducir el video')
+    }
+  });
+  setInterval(()=>{
+    if(player&&player.getCurrentTime){progress=player.getCurrentTime();if(player.getDuration)duration=player.getDuration();updateUI()}
+  },500);
+}
+
+function play(){if(player)player.playVideo()}
+function pause(){if(player)player.pauseVideo()}
+function togglePlay(){playing?pause():play()}
+function next(){
+  if(!player||!videoIds.length)return;
+  const i=(currentVideo+1)%videoIds.length;
+  player.loadVideoById(videoIds[i]);currentVideo=i;updateUI();
+}
+function prev(){
+  if(!player||!videoIds.length)return;
+  const i=(currentVideo-1+videoIds.length)%videoIds.length;
+  player.loadVideoById(videoIds[i]);currentVideo=i;updateUI();
+}
+function restart(){if(player){player.seekTo(0,true);player.playVideo()}}
+function toggleMute(){if(player){player.isMuted()?player.unMute():player.mute();muted=player.isMuted();updateUI()}}
+
+function addVideos(urls){
+  const ids=[];let added=0;
+  urls.forEach(u=>{const id=extractId(u);if(id){ids.push(id);added++}});
+  if(!ids.length)return alert('No hay URLs válidas');
+  videoIds=[...videoIds,...ids];
+  config.videoUrls=[...config.videoUrls,...urls];
+  saveConfig(config);
+  if(videoIds.length===ids.length&&playerReady){player.cueVideoById(ids[0]);currentVideo=0}
+  updateUI();
+}
+
+function removeVideo(i){
+  videoIds.splice(i,1);
+  config.videoUrls.splice(i,1);
+  saveConfig(config);
+  if(!videoIds.length){currentVideo=0;if(player)player.stopVideo()}
+  else if(i<=currentVideo){currentVideo=Math.max(0,currentVideo-1);if(playerReady)player.cueVideoById(videoIds[currentVideo])}
+  updateUI();
+}
+
+function loadVideo(i){
+  if(!player||i<0||i>=videoIds.length)return;
+  player.loadVideoById(videoIds[i]);currentVideo=i;updateUI();
+}
+
+function applyLogo(){
+  const el=$('logo-overlay');
+  if(!config.logo){el.style.display='none';return}
+  el.src=config.logo;
+  el.style.display='block';
+  el.style.width=config.logoSize+'px';
+  el.style.height='auto';
+  el.style.opacity=config.logoOpacity/100;
+  const margin=config.logoMargin+'px';
+  const pos=config.logoPosition;
+  el.style.top=el.style.bottom=el.style.left=el.style.right=el.style.transform='none';
+  if(pos==='top-left'){el.style.top=margin;el.style.left=margin}
+  else if(pos==='top-right'){el.style.top=margin;el.style.right=margin}
+  else if(pos==='bottom-left'){el.style.bottom=margin;el.style.left=margin}
+  else if(pos==='bottom-right'){el.style.bottom=margin;el.style.right=margin}
+  else if(pos==='center'){el.style.top='50%';el.style.left='50%';el.style.transform='translate(-50%,-50%)'}
+}
+
+function applyOverlay(){
+  const el=$('overlay-text');
+  if(config.overlayEnabled&&config.overlayText){el.textContent=config.overlayText;el.style.display='block'}
+  else el.style.display='none';
+}
+
+function updateUI(){
+  $('videoNum').textContent=(videoIds.length?currentVideo+1:0)+' / '+videoIds.length;
+  $('timeDisplay').textContent=fmt(progress)+' / '+fmt(duration);
+  $('progressBar').style.width=duration>0?(progress/duration*100)+'%':'0%';
+  $('btnPlay').textContent=playing?'⏸':'▶';
+  $('btnMute').textContent=muted?'🔇':'🔊';
+  $('status').textContent=videoIds.length?(currentVideo+1)+' / '+videoIds.length:'Sin videos';
+  applyLogo();applyOverlay();
+}
+
+// Controls auto-hide
+function resetTimer(){
+  $('controls').classList.remove('hidden');
+  clearTimeout(hideTimer);
+  hideTimer=setTimeout(()=>$('controls').classList.add('hidden'),config.hideDelay||3000);
+}
+document.addEventListener('mousemove',resetTimer);
+document.addEventListener('touchstart',resetTimer);
+resetTimer();
+
+// Button events
+$('btnPlay').onclick=togglePlay;
+$('btnPrev').onclick=prev;
+$('btnNext').onclick=next;
+$('btnRestart').onclick=restart;
+$('btnMute').onclick=toggleMute;
+$('btnFullscreen').onclick=()=>{const e=document.documentElement;(e.requestFullscreen||e.webkitRequestFullscreen)()};
+$('btnMinimize').onclick=()=>$('controls').classList.add('hidden');
+
+// Fullscreen change
+document.addEventListener('fullscreenchange',()=>{});
+
+// Settings modal
+let showSettings=false;
+$('settings-btn').onclick=()=>{
+  showSettings=!showSettings;
+  renderSettings();
+};
+
+function renderSettings(){
+  if(!showSettings){const m=document.querySelector('.modal-overlay');if(m)m.remove();return}
+  const m=document.createElement('div');m.className='modal-overlay';
+  m.onclick=(e)=>{if(e.target===m){showSettings=false;m.remove()}};
+  m.innerHTML=`
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="between"><h2>Configuración</h2><button class="btn" onclick="showSettings=false;this.closest('.modal-overlay').remove()">✕</button></div>
+      <label>Tamaño logo: <span id="logoSizeVal">${config.logoSize}</span>px</label>
+      <input type="range" min="20" max="300" value="${config.logoSize}" oninput="config.logoSize=+this.value;document.getElementById('logoSizeVal').textContent=this.value;applyLogo()">
+      <label>Opacidad logo: <span id="logoOpacityVal">${config.logoOpacity}</span>%</label>
+      <input type="range" min="10" max="100" value="${config.logoOpacity}" oninput="config.logoOpacity=+this.value;document.getElementById('logoOpacityVal').textContent=this.value;applyLogo()">
+      <label>Margen logo: <span id="logoMarginVal">${config.logoMargin}</span>px</label>
+      <input type="range" min="0" max="100" value="${config.logoMargin}" oninput="config.logoMargin=+this.value;document.getElementById('logoMarginVal').textContent=this.value;applyLogo()">
+      <label>Posición logo</label>
+      <select onchange="config.logoPosition=this.value;applyLogo()">
+        <option value="top-left"${config.logoPosition==='top-left'?' selected':''}>Sup. izquierda</option>
+        <option value="top-right"${config.logoPosition==='top-right'?' selected':''}>Sup. derecha</option>
+        <option value="bottom-left"${config.logoPosition==='bottom-left'?' selected':''}>Inf. izquierda</option>
+        <option value="bottom-right"${config.logoPosition==='bottom-right'?' selected':''}>Inf. derecha</option>
+        <option value="center"${config.logoPosition==='center'?' selected':''}>Centro</option>
+      </select>
+      <label>Texto overlay</label>
+      <input type="text" value="${config.overlayText||''}" onchange="config.overlayText=this.value;applyOverlay()" placeholder="Texto informativo...">
+      <div class="flex mt"><input type="checkbox" ${config.overlayEnabled?'checked':''} onchange="config.overlayEnabled=this.checked;applyOverlay()"><span style="font-size:13px;color:rgba(255,255,255,.7)">Activar overlay</span></div>
+      <div class="flex"><input type="checkbox" ${config.autoplay?'checked':''} onchange="config.autoplay=this.checked"><span style="font-size:13px;color:rgba(255,255,255,.7)">Autoplay</span></div>
+      <div class="flex"><input type="checkbox" ${config.loop?'checked':''} onchange="config.loop=this.checked"><span style="font-size:13px;color:rgba(255,255,255,.7)">Loop</span></div>
+      <label>Tiempo ocultar controles: <span id="hideDelayVal">${config.hideDelay}</span>ms</label>
+      <input type="range" min="1000" max="15000" step="500" value="${config.hideDelay}" oninput="config.hideDelay=+this.value;document.getElementById('hideDelayVal').textContent=this.value">
+      <div class="flex mt"><button class="btn btn-danger" onclick="localStorage.removeItem('${STORAGE_KEY}');location.reload()">Restablecer</button><button class="btn" onclick="showSettings=false;this.closest('.modal-overlay').remove();saveConfig(config)">Cerrar</button></div>
+    </div>`;
+  document.body.appendChild(m);
+}
+
+// Playlist modal
+$('playlist-btn').onclick=()=>{
+  const m=document.createElement('div');m.className='modal-overlay';
+  m.onclick=(e)=>{if(e.target===m)m.remove()};
+  const listHtml=videoIds.map((id,i)=>`
+    <div class="vitem${i===currentVideo?' active':''}" onclick="loadVideo(${i});this.closest('.modal-overlay').remove()">
+      <span class="idx">${i+1}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${id}</span>
+      ${i===currentVideo?'<span style="font-size:9px;color:#4ade80">▶</span>':''}
+      <button class="del" onclick="event.stopPropagation();removeVideo(${i})">✕</button>
+    </div>`).join('');
+  m.innerHTML=`
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="between"><h2>Playlist (${videoIds.length})</h2><button class="btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+      <div class="vlist">${listHtml||'<div style="text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:13px">Sin videos</div>'}</div>
+      <textarea id="linksInput" rows="3" placeholder="Pega enlaces de YouTube&#10;uno por línea"></textarea>
+      <div class="flex between mt">
+        <span style="font-size:10px;color:rgba(255,255,255,.3)">Ej: https://youtube.com/watch?v=...</span>
+        <button class="btn btn-primary" onclick="const t=document.getElementById('linksInput').value.split('\\n').map(l=>l.trim()).filter(Boolean);if(t.length){addVideos(t);this.closest('.modal-overlay').remove()}">Agregar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+};
+
+// Remote QR
+$('remote-btn').onclick=()=>{
+  const pop=$('qr-popup');
+  if(pop.style.display!='none'){pop.style.display='none';return}
+  const url=location.href.split('#')[0]+'#/remote';
+  pop.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:8px">Control remoto</div>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(url)}" alt="QR" crossorigin="anonymous">
+    <div class="url">${url}</div>`;
+  pop.style.display='block';
+  setTimeout(()=>{pop.style.display='none'},15000);
+};
+
+// Load saved videos
+if(config.videoUrls&&config.videoUrls.length){
+  const ids=[];
+  config.videoUrls.forEach(u=>{const id=extractId(u);if(id)ids.push(id)});
+  if(ids.length){videoIds=ids;if(apiReady)initPlayer()}
+}
+</script>
+</body>
+</html>
