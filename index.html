@@ -7,13 +7,25 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;color:#fff}
-#app{width:100%;height:100%;position:relative}
+#app{width:100%;height:100%;position:relative;display:flex}
+#player-wrap{flex:1;position:relative;overflow:hidden}
 #player{width:100%;height:100%;pointer-events:none}
 #player iframe{width:100%;height:100%}
-.glass{background:rgba(0,0,0,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
+#sidebar{width:260px;flex-shrink:0;background:rgba(0,0,0,.7);backdrop-filter:blur(16px);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;transition:transform .3s,margin .3s;z-index:25;overflow:hidden}
+#sidebar.hidden{transform:translateX(-100%);margin-left:-260px}
+#sidebar .header{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:rgba(255,255,255,.4);display:flex;justify-content:space-between;align-items:center}
+#sidebar .header span{font-weight:600;color:rgba(255,255,255,.6)}
+#sidebar .list{flex:1;overflow-y:auto;padding:6px}
+.side-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.45);transition:.15s;margin-bottom:2px}
+.side-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.7)}
+.side-item.active{background:rgba(255,255,255,.1);color:#fff}
+.side-item .idx{font-size:10px;color:rgba(255,255,255,.25);width:18px;text-align:right;flex-shrink:0}
+.side-item .del{margin-left:auto;background:none;border:none;color:#f44;cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:.15s}
+.side-item:hover .del{opacity:.6}
+.side-item .del:hover{opacity:1;background:rgba(255,50,50,.2)}
 #controls{position:fixed;right:0;top:0;height:100%;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s;padding:12px 8px}
 #controls.hidden{opacity:0;pointer-events:none}
-#panel{background:rgba(0,0,0,.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);border-radius:16px 0 0 16px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:4px}
+#panel{background:rgba(0,0,0,.55);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);border-radius:16px 0 0 16px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:4px}
 #panel button{background:none;border:none;color:rgba(255,255,255,.7);padding:8px;border-radius:8px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;font-size:16px}
 #panel button:hover{background:rgba(255,255,255,.1);color:#fff}
 .info{text-align:center;font-size:10px;color:rgba(255,255,255,.5);margin-bottom:4px}
@@ -21,14 +33,13 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:sys
 .bar{width:48px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin:4px 0}
 .bar-fill{height:100%;background:rgba(255,255,255,.6);border-radius:2px;transition:width .3s}
 .sep{width:24px;height:1px;background:rgba(255,255,255,.08);margin:6px 0}
-#settings-btn,#playlist-btn,#remote-btn{position:fixed;top:16px;z-index:30;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);cursor:pointer;transition:.2s;font-size:16px;border:none}
-#settings-btn:hover,#playlist-btn:hover,#remote-btn:hover{color:#fff;transform:scale(1.1)}
-#settings-btn{left:16px}
-#playlist-btn{right:60px}
-#remote-btn{right:108px}
-#status{position:fixed;bottom:16px;left:16px;z-index:30;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,.5);font-family:monospace}
+#settings-btn,#remote-btn{position:fixed;top:16px;z-index:30;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);cursor:pointer;transition:.2s;font-size:16px;border:none}
+#settings-btn:hover,#remote-btn:hover{color:#fff;transform:scale(1.1)}
+#settings-btn{left:274px}
+#remote-btn{right:16px}
+#status{position:fixed;bottom:16px;left:274px;z-index:30;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,.5);font-family:monospace}
 .modal-overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center}
-.modal{background:rgba(0,0,0,.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;padding:20px}
+.modal{background:rgba(0,0,0,.75);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;padding:20px}
 .modal h2{font-size:18px;font-weight:600;margin-bottom:16px}
 .modal label{display:block;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;margin-top:12px}
 .modal input,.modal textarea,.modal select{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;color:#fff;font-size:13px;outline:none;transition:.2s}
@@ -38,29 +49,28 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:sys
 .modal .btn:hover{background:rgba(255,255,255,.2)}
 .modal .btn-primary{background:rgba(255,255,255,.15)}
 .modal .btn-danger{background:rgba(255,50,50,.15);color:#f66}
-.modal .btn-success{background:rgba(50,255,50,.1);color:#6f6}
 .modal .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .modal .between{display:flex;justify-content:space-between;align-items:center}
-.modal .center{text-align:center}
 .modal .mt{margin-top:12px}
-.modal .mb{margin-bottom:8px}
 .modal input[type=range]{width:100%;height:4px;background:rgba(255,255,255,.2);border-radius:2px;outline:none;-webkit-appearance:none}
 .modal input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;cursor:pointer}
-.vlist{max-height:200px;overflow-y:auto;margin:8px 0}
-.vitem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.5);transition:.15s}
-.vitem:hover{background:rgba(255,255,255,.05)}
-.vitem.active{background:rgba(255,255,255,.1);color:#fff}
-.vitem .idx{font-size:10px;color:rgba(255,255,255,.3);width:20px;text-align:right;flex-shrink:0}
-.vitem .del{margin-left:auto;background:none;border:none;color:#f44;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;opacity:.5}
-.vitem .del:hover{opacity:1;background:rgba(255,50,50,.2)}
 #logo-overlay{position:absolute;z-index:20;pointer-events:none;object-fit:contain}
 #overlay-text{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;color:#fff;font-size:18px;font-weight:600;text-align:center;padding:12px 24px;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border-radius:12px;max-width:90%}
-.remote-page{min-height:100vh;background:linear-gradient(135deg,#111,#000);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px}
+.remote-page{min-height:100vh;background:linear-gradient(135deg,#111,#000);display:flex;flex-direction:column;align-items:center;padding:24px;gap:12px}
 .remote-page .rbtn{background:rgba(255,255,255,.08);border:none;color:#fff;width:60px;height:60px;border-radius:16px;font-size:24px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
 .remote-page .rbtn:hover{background:rgba(255,255,255,.15);transform:scale(1.05)}
 .remote-page .rbtn:active{transform:scale(.95)}
 .remote-page .rbtn-big{width:76px;height:76px;font-size:30px;background:rgba(255,255,255,.12)}
 .remote-page .rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.remote-page .rinput{width:100%;max-width:320px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 12px;color:#fff;font-size:13px;outline:none}
+.remote-page .rinput:focus{border-color:rgba(255,255,255,.3)}
+.remote-page .rlist{width:100%;max-width:320px;margin-top:4px}
+.remote-page .ritem{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.5);transition:.1s}
+.remote-page .ritem:hover{background:rgba(255,255,255,.05)}
+.remote-page .ritem.active{background:rgba(255,255,255,.1);color:#fff}
+.remote-page .ritem .idx{font-size:9px;color:rgba(255,255,255,.3);width:16px;text-align:right;flex-shrink:0}
+.remote-page .ritem .rdel{margin-left:auto;background:none;border:none;color:#f44;cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;opacity:.4}
+.remote-page .ritem .rdel:hover{opacity:1;background:rgba(255,50,50,.2)}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
@@ -68,14 +78,23 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:sys
 </head>
 <body>
 <div id="app">
-  <div id="player"></div>
-  <img id="logo-overlay" style="display:none">
-  <div id="overlay-text" style="display:none"></div>
+  <div id="sidebar">
+    <div class="header"><span>Playlist</span><span id="sideCount">0</span></div>
+    <div class="list" id="sideList"><div style="text-align:center;padding:30px 10px;color:rgba(255,255,255,.2);font-size:12px">Agrega videos desde ☰</div></div>
+    <div class="header" style="border-top:1px solid rgba(255,255,255,.06);border-bottom:none;padding:10px 16px">
+      <input id="sideInput" placeholder="Pega un enlace y presiona Enter" style="background:rgba(255,255,255,.06);border:none;border-radius:6px;padding:6px 10px;color:#fff;font-size:11px;width:100%;outline:none">
+    </div>
+  </div>
+  <div id="player-wrap">
+    <div id="player"></div>
+    <img id="logo-overlay" style="display:none">
+    <div id="overlay-text" style="display:none"></div>
+  </div>
   <div id="controls">
     <div id="panel">
-      <div class="info"><div class="num" id="videoNum">0 / 0</div></div>
+      <div class="info"><div class="num" id="videoNum">0/0</div></div>
       <div class="bar"><div class="bar-fill" id="progressBar"></div></div>
-      <div class="info" id="timeDisplay">0:00 / 0:00</div>
+      <div class="info" id="timeDisplay">0:00/0:00</div>
       <div class="sep"></div>
       <button id="btnPlay">▶</button>
       <button id="btnPrev">⏮</button>
@@ -89,14 +108,28 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:sys
     </div>
   </div>
   <button id="settings-btn">⚙</button>
-  <button id="playlist-btn">☰</button>
   <button id="remote-btn">📱</button>
   <div id="status"></div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-const STORAGE_KEY='vp-config';
-const DEFAULTS={videoUrls:[],logo:null,logoSize:100,logoPosition:'bottom-right',logoOpacity:80,logoMargin:20,overlayText:'',overlayEnabled:false,autoplay:true,loop:true,hideDelay:3000};
+const firebaseConfig = {
+  apiKey: "AIzaSyBfRxs7Jygy86b4yFEr5WKl6guyzcThyzs",
+  authDomain: "vainapabuena.firebaseapp.com",
+  databaseURL: "https://vainapabuena-default-rtdb.firebaseio.com",
+  projectId: "vainapabuena",
+  storageBucket: "vainapabuena.firebasestorage.app",
+  messagingSenderId: "232157375786",
+  appId: "1:232157375786:web:69ffc3dc4f00f022354253"
+};
+
+firebase.initializeApp(firebaseConfig);
+const fbDB = firebase.database();
+
+const STORAGE_KEY='vp2-config';
+const DEFAULTS={videoUrls:[],logo:null,logoSize:120,logoPosition:'bottom-right',logoOpacity:80,logoMargin:20,overlayText:'',overlayEnabled:false,autoplay:true,loop:true,hideDelay:3000};
 
 function loadConfig(){try{const r=localStorage.getItem(STORAGE_KEY);return r?{...DEFAULTS,...JSON.parse(r)}:{...DEFAULTS}}catch{return{...DEFAULTS}}}
 function saveConfig(c){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(c))}catch{}}
@@ -104,49 +137,52 @@ function saveConfig(c){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(c))}c
 function extractId(url){try{const u=new URL(url.trim());if(!u.hostname.includes('youtube.com')&&!u.hostname.includes('youtu.be'))return null;if(u.searchParams.has('v'))return u.searchParams.get('v');const p=u.pathname.replace(/^\//,'').split('/');if(u.hostname.includes('youtu.be')&&p[0])return p[0];if(p[0]==='embed'&&p[1])return p[1];if(p[0]==='shorts'&&p[1])return p[1];return null}catch{return null}}
 function fmt(s){if(!s||!isFinite(s))return'0:00';const m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+sec.toString().padStart(2,'0')}
 
-// BroadcastChannel for remote control
-const bc=new BroadcastChannel('vp-remote');
-
 let config=loadConfig();
 let player=null,playing=false,muted=false,currentVideo=0,videoIds=[],duration=0,progress=0;
 let playerReady=false,hideTimer=null;
-
+let lastSend='';
 const $=id=>document.getElementById(id);
 
-// Hash routing
-if(location.hash==='#/remote'){renderRemote();document.title='Control Remoto';throw'remote'}
+const isRemote = location.hash==='#/remote';
+if(isRemote){renderRemote();document.title='Control Remoto';throw'remote'}
 
-function sendState(){
-  bc.postMessage({type:'state',playing,muted,currentVideo,videoIds,duration,progress});
-}
-bc.onmessage=e=>{
-  const msg=e.data;
-  if(msg.type==='cmd'){
-    if(msg.action==='play')play();
-    else if(msg.action==='pause')pause();
-    else if(msg.action==='toggle')togglePlay();
-    else if(msg.action==='next')next();
-    else if(msg.action==='prev')prev();
-    else if(msg.action==='restart')restart();
-    else if(msg.action==='mute')toggleMute();
-    else if(msg.action==='fullscreen'){const e=document.documentElement;(e.requestFullscreen||e.webkitRequestFullscreen)()}
-    else if(msg.action==='load')loadVideo(msg.index);
-  }
-};
-setInterval(sendState,800);
+setInterval(()=>{
+  const s={playing,muted,currentVideo,videoIds,duration,progress:Math.round(progress)};
+  const j=JSON.stringify(s);
+  if(j!==lastSend){lastSend=j;fbDB.ref('player/state').set(s)}
+},1200);
 
-// YouTube IFrame API
+fbDB.ref('commands').on('child_added',snap=>{
+  const cmd=snap.val();
+  snap.ref.remove();
+  if(!cmd||!cmd.action)return;
+  if(cmd.action==='play')play();
+  else if(cmd.action==='pause')pause();
+  else if(cmd.action==='toggle')togglePlay();
+  else if(cmd.action==='next')next();
+  else if(cmd.action==='prev')prev();
+  else if(cmd.action==='restart')restart();
+  else if(cmd.action==='mute')toggleMute();
+  else if(cmd.action==='fullscreen'){const d=document.documentElement;(d.requestFullscreen||d.webkitRequestFullscreen)()}
+  else if(cmd.action==='load')loadVideo(cmd.index);
+  else if(cmd.action==='addVideo'){if(cmd.url){addVideos([cmd.url])}}
+  else if(cmd.action==='removeVideo'){if(typeof cmd.index==='number')removeVideo(cmd.index)}
+});
+
 let apiReady=false;
-window.onYouTubeIframeAPIReady=()=>{apiReady=true;initPlayer()};
+window.onYouTubeIframeAPIReady=()=>{apiReady=true;tryInit()};
 if(!document.querySelector('#yt-api')){const t=document.createElement('script');t.id='yt-api';t.src='https://www.youtube.com/iframe_api';document.head.appendChild(t)}
 
-function initPlayer(){
-  if(!apiReady||videoIds.length===0)return;
+function tryInit(){
+  if(!apiReady||videoIds.length===0||player)return;
   player=new YT.Player('player',{
     height:'100%',width:'100%',
     playerVars:{controls:0,modestbranding:1,rel:0,iv_load_policy:3,disablekb:1,fs:0,cc_load_policy:0,autoplay:1,playsinline:1,mute:1},
     events:{
-      onReady:()=>{playerReady=true;muted=player.isMuted();if(videoIds.length)player.cueVideoById(videoIds[0])},
+      onReady:()=>{
+        playerReady=true;muted=player.isMuted();
+        if(videoIds.length){player.loadVideoById(videoIds[0]);currentVideo=0;if(config.autoplay)setTimeout(()=>player.playVideo(),300)}
+      },
       onStateChange:e=>{
         if(e.data===YT.PlayerState.PLAYING){playing=true;updateUI()}
         else if(e.data===YT.PlayerState.PAUSED){playing=false;updateUI()}
@@ -154,7 +190,7 @@ function initPlayer(){
           playing=false;const n=currentVideo+1;
           if(n<videoIds.length){player.loadVideoById(videoIds[n]);currentVideo=n}
           else if(config.loop&&videoIds.length){player.loadVideoById(videoIds[0]);currentVideo=0}
-          updateUI();
+          updateUI()
         }else if(e.data===YT.PlayerState.CUED){if(player.getDuration)duration=player.getDuration();updateUI()}
       },
       onError:()=>{}
@@ -182,10 +218,12 @@ function toggleMute(){if(player){player.isMuted()?player.unMute():player.mute();
 function addVideos(urls){
   const ids=[];const validUrls=[];
   urls.forEach(u=>{const id=extractId(u);if(id){ids.push(id);validUrls.push(u)}});
-  if(!ids.length){alert('URLs no válidas');return}
+  if(!ids.length)return;
+  const wasEmpty=videoIds.length===0;
   videoIds=[...videoIds,...ids];config.videoUrls=[...config.videoUrls,...validUrls];
   saveConfig(config);
-  if(videoIds.length===ids.length&&playerReady){player.cueVideoById(ids[0]);currentVideo=0}
+  if(!player)tryInit();
+  else if(wasEmpty&&playerReady){player.loadVideoById(ids[0]);currentVideo=0}
   updateUI();
 }
 
@@ -193,7 +231,7 @@ function removeVideo(i){
   videoIds.splice(i,1);config.videoUrls.splice(i,1);
   saveConfig(config);
   if(!videoIds.length){currentVideo=0;if(player)player.stopVideo()}
-  else if(i<=currentVideo){currentVideo=Math.max(0,currentVideo-1);if(playerReady)player.cueVideoById(videoIds[currentVideo])}
+  else if(i<=currentVideo){currentVideo=Math.max(0,currentVideo-1);if(playerReady)player.loadVideoById(videoIds[currentVideo])}
   updateUI();
 }
 
@@ -229,6 +267,10 @@ function updateUI(){
   $('btnPlay').textContent=playing?'⏸':'▶';
   $('btnMute').textContent=muted?'🔇':'🔊';
   $('status').textContent=videoIds.length?(currentVideo+1)+'/'+videoIds.length:'Sin videos';
+  $('sideCount').textContent=videoIds.length;
+  const sl=$('sideList');
+  if(!videoIds.length)sl.innerHTML='<div style="text-align:center;padding:30px 10px;color:rgba(255,255,255,.2);font-size:12px">Agrega videos desde ☰</div>';
+  else sl.innerHTML=videoIds.map((id,i)=>'<div class="side-item'+(i===currentVideo?' active':'')+'" onclick="loadVideo('+i+')"><span class="idx">'+(i+1)+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+id+'</span>'+(i===currentVideo?'<span style="font-size:9px;color:#4ade80">▶</span>':'')+'<button class="del" onclick="event.stopPropagation();removeVideo('+i+')">✕</button></div>').join('');
   applyLogo();applyOverlay();
 }
 
@@ -249,7 +291,8 @@ $('btnMute').onclick=toggleMute;
 $('btnFullscreen').onclick=()=>{const e=document.documentElement;(e.requestFullscreen||e.webkitRequestFullscreen)()};
 $('btnMinimize').onclick=()=>$('controls').classList.add('hidden');
 
-// Settings modal
+$('sideInput').onkeydown=e=>{if(e.key==='Enter'){const v=e.target.value.trim();if(v){addVideos([v]);e.target.value=''}}};
+
 $('settings-btn').onclick=()=>{
   const m=document.createElement('div');m.className='modal-overlay';
   m.onclick=e=>{if(e.target===m)m.remove()};
@@ -257,10 +300,10 @@ $('settings-btn').onclick=()=>{
     <div class="modal" onclick="event.stopPropagation()">
       <div class="between"><h2>Configuración</h2><button class="btn" onclick="this.closest('.modal-overlay').remove();saveConfig(config)">✕</button></div>
       <label>Subir logo</label>
-      <div class="flex">${config.logo?'<img src="'+config.logo+'" style="height:40px;border-radius:4px">':''}<input type="file" accept="image/*" id="logoInput"></div>
-      <div class="flex">${config.logo?'<button class="btn btn-danger" onclick="config.logo=null;document.getElementById(\'logoInput\').value=\'\';applyLogo();this.parentElement.remove();this.closest(\'.modal\').querySelector(\'label\').after(this.parentElement)">Eliminar logo</button>':''}</div>
+      <div class="flex">${config.logo?'<img src="'+config.logo+'" style="height:50px;border-radius:4px">':''}<input type="file" accept="image/*" id="logoInput"></div>
+      ${config.logo?'<div class="flex"><button class="btn btn-danger" onclick="config.logo=null;document.getElementById(\'logoInput\').value=\'\';applyLogo();this.parentElement.remove()">Eliminar logo</button></div>':''}
       <label>Tamaño: <span id="lsv">${config.logoSize}</span>px</label>
-      <input type="range" min="20" max="400" value="${config.logoSize}" oninput="config.logoSize=+this.value;lsv.textContent=this.value;applyLogo()">
+      <input type="range" min="20" max="800" value="${config.logoSize}" oninput="config.logoSize=+this.value;lsv.textContent=this.value;applyLogo()">
       <label>Opacidad: <span id="lov">${config.logoOpacity}</span>%</label>
       <input type="range" min="10" max="100" value="${config.logoOpacity}" oninput="config.logoOpacity=+this.value;lov.textContent=this.value;applyLogo()">
       <label>Margen: <span id="lmv">${config.logoMargin}</span>px</label>
@@ -274,11 +317,11 @@ $('settings-btn').onclick=()=>{
         <option value="center"${config.logoPosition==='center'?' selected':''}>Centro</option>
       </select>
       <label>Texto overlay</label>
-      <input type="text" value="${(config.overlayText||'').replace(/"/g,'&quot;')}" onchange="config.overlayText=this.value;applyOverlay()" placeholder="Ej: Bienvenidos">
-      <div class="flex mt"><input type="checkbox" id="ovChk" ${config.overlayEnabled?'checked':''} onchange="config.overlayEnabled=this.checked;applyOverlay()"><label for="ovChk" style="margin:0;font-size:13px;color:rgba(255,255,255,.7)">Activar overlay</label></div>
-      <div class="flex"><input type="checkbox" id="apChk" ${config.autoplay?'checked':''} onchange="config.autoplay=this.checked"><label for="apChk" style="margin:0;font-size:13px;color:rgba(255,255,255,.7)">Autoplay</label></div>
-      <div class="flex"><input type="checkbox" id="lpChk" ${config.loop?'checked':''} onchange="config.loop=this.checked"><label for="lpChk" style="margin:0;font-size:13px;color:rgba(255,255,255,.7)">Loop</label></div>
-      <label>Tiempo ocultar controles: <span id="hdv">${config.hideDelay}</span>ms</label>
+      <input type="text" value="${(config.overlayText||'').replace(/"/g,'&quot;')}" onchange="config.overlayText=this.value;applyOverlay()" placeholder="Texto informativo">
+      <div class="flex mt"><input type="checkbox" id="ovChk" ${config.overlayEnabled?'checked':''} onchange="config.overlayEnabled=this.checked;applyOverlay()"><label for="ovChk" style="margin:0;font-size:13px">Activar overlay</label></div>
+      <div class="flex"><input type="checkbox" id="apChk" ${config.autoplay?'checked':''} onchange="config.autoplay=this.checked"><label for="apChk" style="margin:0;font-size:13px">Autoplay</label></div>
+      <div class="flex"><input type="checkbox" id="lpChk" ${config.loop?'checked':''} onchange="config.loop=this.checked"><label for="lpChk" style="margin:0;font-size:13px">Loop</label></div>
+      <label>Ocultar controles: <span id="hdv">${config.hideDelay}</span>ms</label>
       <input type="range" min="1000" max="15000" step="500" value="${config.hideDelay}" oninput="config.hideDelay=+this.value;hdv.textContent=this.value">
       <div class="flex between mt">
         <button class="btn btn-danger" onclick="localStorage.removeItem('${STORAGE_KEY}');location.reload()">Restablecer</button>
@@ -286,43 +329,16 @@ $('settings-btn').onclick=()=>{
       </div>
     </div>`;
   document.body.appendChild(m);
-  // Handle logo upload
   document.getElementById('logoInput').onchange=function(){
     const file=this.files[0];if(!file)return;
     const r=new FileReader();
-    r.onload=function(e){config.logo=e.target.result;applyLogo();saveConfig(config);};
+    r.onload=function(e){config.logo=e.target.result;applyLogo();saveConfig(config)};
     r.readAsDataURL(file);
   };
 };
 
-// Playlist modal
-$('playlist-btn').onclick=()=>{
-  const m=document.createElement('div');m.className='modal-overlay';
-  m.onclick=e=>{if(e.target===m)m.remove()};
-  const listHtml=videoIds.map((id,i)=>`
-    <div class="vitem${i===currentVideo?' active':''}" onclick="loadVideo(${i});this.closest('.modal-overlay').remove()">
-      <span class="idx">${i+1}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${id}</span>
-      ${i===currentVideo?'<span style="font-size:9px;color:#4ade80">▶</span>':''}
-      <button class="del" onclick="event.stopPropagation();removeVideo(${i});this.closest('.vitem').remove();if(!videoIds.length){const v=this.closest('.vlist');if(v)v.innerHTML='<div style=\\'text-align:center;padding:20px;color:rgba(255,255,255,.3)\\'>Sin videos</div>'}">✕</button>
-    </div>`).join('');
-  m.innerHTML=`
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="between"><h2>Playlist (${videoIds.length})</h2><button class="btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
-      <div class="vlist">${listHtml||'<div style="text-align:center;padding:20px;color:rgba(255,255,255,.3)">Sin videos</div>'}</div>
-      <textarea id="li" rows="3" placeholder="Pega enlaces de YouTube, uno por línea"></textarea>
-      <div class="flex between mt">
-        <span style="font-size:10px;color:rgba(255,255,255,.3)">youtube.com/watch?v=...</span>
-        <button class="btn btn-primary" onclick="const t=document.getElementById('li').value.split('\\n').map(l=>l.trim()).filter(Boolean);if(t.length){addVideos(t);this.closest('.modal-overlay').remove()}">Agregar</button>
-      </div>
-    </div>`;
-  document.body.appendChild(m);
-};
-
-// Remote QR
 $('remote-btn').onclick=()=>{
   const pop=document.createElement('div');
-  pop.id='qr-popup';
   pop.style.cssText='position:fixed;top:60px;right:16px;z-index:40;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;text-align:center;width:200px';
   const url=location.href.split('#')[0]+'#/remote';
   pop.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:8px">Control remoto</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(url)+'" style="border-radius:8px;background:#fff;padding:8px;width:140px;height:140px" crossorigin="anonymous"><div style="font-size:9px;color:rgba(255,255,255,.3);word-break:break-all;margin-top:6px">'+url+'</div>';
@@ -331,49 +347,63 @@ $('remote-btn').onclick=()=>{
   pop.onclick=()=>pop.remove();
 };
 
-// Load saved videos
 if(config.videoUrls&&config.videoUrls.length){
-  const ids=[];const vl=config.videoUrls;
-  vl.forEach(u=>{const id=extractId(u);if(id)ids.push(id)});
-  if(ids.length){videoIds=ids;if(apiReady)initPlayer()}
-}else if(apiReady){initPlayer()}
+  const ids=[];config.videoUrls.forEach(u=>{const id=extractId(u);if(id)ids.push(id)});
+  if(ids.length){videoIds=ids;tryInit()}
+}
+updateUI();
 
-// Remote control page
 function renderRemote(){
   document.body.innerHTML=`
     <div class="remote-page">
-      <div style="color:rgba(255,255,255,.4);font-size:12px;letter-spacing:2px;text-transform:uppercase">Control Remoto</div>
+      <div style="color:rgba(255,255,255,.4);font-size:12px;letter-spacing:2px">CONTROL REMOTO</div>
       <div style="text-align:center">
         <div style="font-size:36px;font-weight:700" id="rnum">0/0</div>
         <div style="font-size:12px;color:rgba(255,255,255,.5)" id="rtime">0:00 / 0:00</div>
       </div>
       <div class="rgrid">
-        <button class="rbtn" onclick="bc.postMessage({type:'cmd',action:'prev'})">⏮</button>
-        <button class="rbtn rbtn-big" onclick="bc.postMessage({type:'cmd',action:'toggle'})" id="rplay">▶</button>
-        <button class="rbtn" onclick="bc.postMessage({type:'cmd',action:'next'})">⏭</button>
-        <button class="rbtn" onclick="bc.postMessage({type:'cmd',action:'restart'})">↺</button>
-        <button class="rbtn" onclick="bc.postMessage({type:'cmd',action:'mute'})" id="rmute">🔊</button>
-        <button class="rbtn" onclick="bc.postMessage({type:'cmd',action:'fullscreen'})">⛶</button>
+        <button class="rbtn" onclick="sendCmd('prev')">⏮</button>
+        <button class="rbtn rbtn-big" onclick="sendCmd('toggle')" id="rplay">▶</button>
+        <button class="rbtn" onclick="sendCmd('next')">⏭</button>
+        <button class="rbtn" onclick="sendCmd('restart')">↺</button>
+        <button class="rbtn" onclick="sendCmd('mute')" id="rmute">🔊</button>
+        <button class="rbtn" onclick="sendCmd('fullscreen')">⛶</button>
       </div>
-      <div id="rlist" style="width:100%;max-width:320px;margin-top:8px"></div>
+      <div style="width:100%;max-width:320px;margin-top:4px;display:flex;gap:6px">
+        <input class="rinput" id="rAddInput" placeholder="Pega enlace YouTube + Enter" style="flex:1">
+        <button class="rbtn" style="width:44px;height:44px;font-size:18px;border-radius:10px;flex-shrink:0" onclick="addRemoteVideo()">+</button>
+      </div>
+      <div class="rlist" id="rlist"><div style="text-align:center;padding:20px;color:rgba(255,255,255,.2);font-size:12px">Conectando...</div></div>
     </div>`;
-  bc.onmessage=e=>{
-    const msg=e.data;
-    if(msg.type==='state'){
-      document.getElementById('rnum').textContent=(msg.currentVideo+1)+'/'+msg.videoIds.length;
-      document.getElementById('rtime').textContent=fmt(msg.progress)+'/'+fmt(msg.duration);
-      const rp=document.getElementById('rplay');
-      if(rp)rp.textContent=msg.playing?'⏸':'▶';
-      const rm=document.getElementById('rmute');
-      if(rm)rm.textContent=msg.muted?'🔇':'🔊';
-      // Render list
-      const rl=document.getElementById('rlist');
-      if(rl&&msg.videoIds){
-        rl.innerHTML=msg.videoIds.map((id,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;'+(i===msg.currentVideo?'background:rgba(255,255,255,.1);color:#fff':'color:rgba(255,255,255,.5)')+'" onclick="bc.postMessage({type:\'cmd\',action:\'load\',index:'+i+'})"><span style="font-size:9px;color:rgba(255,255,255,.3);width:16px;text-align:right">'+(i+1)+'</span>'+id+'</div>').join('');
-      }
-    }
+
+  window.sendCmd=function(action,extra){
+    fbDB.ref('commands').push({action,...extra,timestamp:Date.now()});
   };
-  bc.postMessage({type:'cmd',action:'ping'});
+
+  window.addRemoteVideo=function(){
+    const inp=document.getElementById('rAddInput');
+    if(!inp||!inp.value.trim())return;
+    sendCmd('addVideo',{url:inp.value.trim()});
+    inp.value='';
+  };
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='rAddInput'){e.preventDefault();window.addRemoteVideo()}
+  });
+
+  fbDB.ref('player/state').on('value',snap=>{
+    const s=snap.val();
+    if(!s)return;
+    const rnum=document.getElementById('rnum');if(rnum)rnum.textContent=(s.currentVideo+1)+'/'+s.videoIds.length;
+    const rtime=document.getElementById('rtime');if(rtime)rtime.textContent=fmt(s.progress)+'/'+fmt(s.duration);
+    const rp=document.getElementById('rplay');if(rp)rp.textContent=s.playing?'⏸':'▶';
+    const rm=document.getElementById('rmute');if(rm)rm.textContent=s.muted?'🔇':'🔊';
+    const rl=document.getElementById('rlist');
+    if(rl){
+      if(!s.videoIds||!s.videoIds.length)rl.innerHTML='<div style="text-align:center;padding:20px;color:rgba(255,255,255,.2);font-size:12px">Sin videos</div>';
+      else rl.innerHTML=s.videoIds.map((id,i)=>'<div class="ritem'+(i===s.currentVideo?' active':'')+'" onclick="sendCmd(\'load\',{index:'+i+'})"><span class="idx">'+(i+1)+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+id+'</span>'+(i===s.currentVideo?'<span style="font-size:9px;color:#4ade80">▶</span>':'')+'<button class="rdel" onclick="event.stopPropagation();sendCmd(\'removeVideo\',{index:'+i+'})">✕</button></div>').join('');
+    }
+  });
 }
 </script>
 </body>
